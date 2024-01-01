@@ -1,0 +1,21 @@
+package-as: VantageEnemyFrames
+
+externals:
+  libs/LibStub: https://repos.curseforge.com/wow/libstub/trunk
+  libs/CallbackHandler-1.0: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
+  libs/AceConfig-3.0: https://repos.curseforge.com/wow/ace3/trunk/AceConfig-3.0
+  libs/AceDB-3.0: https://repos.curseforge.com/wow/ace3/trunk/AceDB-3.0
+  libs/AceDBOptions-3.0: https://repos.curseforge.com/wow/ace3/trunk/AceDBOptions-3.0
+  libs/AceComm-3.0: https://repos.wowace.com/wow/ace3/trunk/AceComm-3.0
+  libs/AceGUI-3.0: https://repos.curseforge.com/wow/ace3/trunk/AceGUI-3.0
+  libs/AceGUI-3.0-SharedMediaWidgets: https://repos.curseforge.com/wow/ace-gui-3-0-shared-media-widgets/trunk/AceGUI-3.0-SharedMediaWidgets
+  libs/LibSharedMedia-3.0: https://repos.curseforge.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+  libs/UTF8: https://repos.curseforge.com/wow/utf8/trunk
+  libs/DRList-1.0: https://github.com/wardz/DRList-1.0
+  libs/LibSpellIconSelector: https://github.com/BullseiWoWAddons/LibSpellIconSelector
+  libs/LibRangeCheck-3.0: https://github.com/WeakAuras/LibRangeCheck-3.0
+  libs/LibSerialize: https://github.com/rossnichols/LibSerialize
+  libs/LibDeflate: https://github.com/SafeteeWoW/LibDeflate
+
+ignore:
+  - scripts

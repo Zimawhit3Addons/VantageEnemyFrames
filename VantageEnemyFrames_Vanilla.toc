@@ -1,0 +1,73 @@
+## Interface: 11500
+## Title: VantageEnemyFrames                                                                                                                                                                 
+## Version: @project-version@
+## Author: Zimawhit3
+## Notes: VantageEnemyFrames. /vef
+## SavedVariables: VantageDB
+
+#@no-lib-strip@
+embeds.xml
+#@end-no-lib-strip@
+
+#
+# Locales
+#
+src/core/locales.lua
+src/core/locales/enUS.lua
+
+#
+# Constants
+#
+src/core/vanilla/constants.lua
+src/core/constants.lua
+
+#
+# Core
+#
+src/core/defaults.lua
+src/core/core.lua
+src/core/changelog.lua
+src/core/log.lua
+src/core/test.lua
+src/core/broadcast.lua
+src/core/config.lua
+src/core/container.lua
+src/core/fontstring.lua
+src/core/cooldown.lua
+src/core/options.lua
+src/core/priority_queue.lua
+src/core/profiles.lua
+
+#
+# Game
+#
+src/game/events.lua
+src/game/player_info.lua
+
+#
+# Modules
+#
+src/frames/modules/healthbar.lua
+src/frames/modules/highest_priority.lua
+src/frames/modules/trinket.lua
+src/frames/modules/auras.lua
+src/frames/modules/castbar.lua
+src/frames/modules/class.lua
+src/frames/modules/combat_indicator.lua
+src/frames/modules/dr.lua
+src/frames/modules/interrupt.lua
+src/frames/modules/level.lua
+src/frames/modules/name.lua
+src/frames/modules/objective.lua
+src/frames/modules/racial.lua
+src/frames/modules/resource.lua
+src/frames/modules/target_counter.lua
+src/frames/modules/target_indicator.lua
+
+#
+# Frames
+#
+src/frames/enemy.lua
+src/frames/respawn.lua
+src/frames/main.lua
+src/vantage.lua
