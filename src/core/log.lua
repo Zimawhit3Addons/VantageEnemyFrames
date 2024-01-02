@@ -144,7 +144,7 @@ function Vantage:Notify( msg )
     print(
         fmt( "%s%s%s%s",
         WrapTextInColorCode( "VantageEnemyFrames(", COLOR_INFO ),
-        WrapTextInColorCode( fmt( "v%s", self.version ), COLOR_SUCCESS ),
+        WrapTextInColorCode( fmt( "%s", self.version ), COLOR_SUCCESS ),
         WrapTextInColorCode( "): ", COLOR_INFO ),
         msg
     ));

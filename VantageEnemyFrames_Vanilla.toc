@@ -55,7 +55,6 @@ src/frames/modules/castbar.lua
 src/frames/modules/class.lua
 src/frames/modules/combat_indicator.lua
 src/frames/modules/dr.lua
-src/frames/modules/interrupt.lua
 src/frames/modules/level.lua
 src/frames/modules/name.lua
 src/frames/modules/objective.lua

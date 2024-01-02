@@ -46,8 +46,7 @@ local WOW_PROJECT_ID                = WOW_PROJECT_ID
 local Vantage = Ace3:NewAddon(
     CreateFrame( "Frame", "VantageEnemyFrames", UIParent ),
     "Vantage",
-    "AceComm-3.0",
-    "AceSerializer-3.0"
+    "AceComm-3.0"
 );
 
 ----------------------------------------

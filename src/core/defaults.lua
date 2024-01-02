@@ -41,6 +41,7 @@ Constants.settings =
 
         Locked  = false,
         Debug   = false,
+        Enable_DevMode = false,
 
         MyTarget_Color              = { 1, 1, 1, 1 },
         MyTarget_BorderSize         = 2,

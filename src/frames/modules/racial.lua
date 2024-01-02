@@ -314,9 +314,7 @@ end
 ---
 ---
 function EnemyRacial:ShowToolTip()
-    if not isClassic then
-        GameTooltip:SetSpellByID( self.spell_id );
-    end
+    GameTooltip:SetSpellByID( self.spell_id );
 end
 
 ---

@@ -279,10 +279,7 @@ end
 ---
 ---
 function Trinket:ShowToolTip()
-    -- TODO: Think this works on classic now
-    if not IsClassic then
-        GameTooltip:SetSpellByID( self.spell_id );
-    end
+    GameTooltip:SetSpellByID( self.spell_id );
 end
 
 ---
