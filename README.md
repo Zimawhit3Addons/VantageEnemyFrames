@@ -58,5 +58,4 @@ A big shoutout to the BattlegroundEnemies addon author [BullseiWoWAddons](https:
 
 If you find VantageEnemyFrames helpful and would like to support its development, consider making a donation. Your contributions help ensure the continued improvement and maintenance of the addon.
 
-- **[Donate via PayPal](https://www.paypal.com/your-paypal-link)**
-- **[Sponsor via Github](https://github.com/sponsors/)**
+- **[Sponsor via Github](https://github.com/sponsors/Zimawhit3Addons)**
