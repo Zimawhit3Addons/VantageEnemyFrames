@@ -374,9 +374,23 @@ end
 ---
 --- @param spell_id number
 ---
-function EnemyAura:RemoveAuraInput( spell_id )
+function EnemyAura:RemoveAuraInputBySpellId( spell_id )
     for i = #self.inputs, 1, -1 do
         if self.inputs[ i ].spellId == spell_id then
+            tremove( self.inputs, i );
+        end
+    end
+    self:Display();
+end
+
+---
+---
+---
+--- @param timestamp number
+---
+function EnemyAura:RemoveAuraInputsByTimestamp( timestamp )
+    for i = #self.inputs, 1, -1 do
+        if self.inputs[ i ].timestamp <= timestamp then
             tremove( self.inputs, i );
         end
     end
@@ -411,6 +425,6 @@ end
 ---
 function EnemyAura:TakeAura()
     local item = self.aura_heap:dequeue();
-    self:RemoveAuraInput( item.spellId );
+    self:RemoveAuraInputBySpellId( item.spellId );
     return item;
 end

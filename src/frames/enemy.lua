@@ -40,7 +40,7 @@ local UnitExists        = UnitExists
 local UnitChannelInfo   = UnitChannelInfo
 local UnitHealth        = UnitHealth
 local UnitHealthMax     = UnitHealthMax
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
+local UnitIsDead        = UnitIsDead
 
 -----------------------------------------
 --                Ace3
@@ -844,6 +844,8 @@ function EnemyFrame:PlayerDetailsChanged()
     self.modules.name:PlayerDetailsChanged( self.player_info );
     self.modules.racial:PlayerDetailsChanged( self.player_info );
     self.modules.resource:PlayerDetailsChanged( self.player_info );
+
+    -- TODO: this should probably reset everything else
 end
 
 ---
@@ -1010,12 +1012,18 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                         isStealable     = canStealOrPurge,
                         name            = name,
                         spellId         = spellId,
-                        priority        = current_aura_priority
+                        priority        = current_aura_priority,
+                        timestamp       = now
                     };
                     buffs:NewInput( new_aura );
                 end
             end
         end
+
+        --
+        -- Remove all stale auras that weren't included in this latest update
+        --
+        buffs:RemoveAuraInputsByTimestamp( self.last_aura_update );
     end
 
     if ( debuffs.enabled or highestpriority.enabled ) then
@@ -1062,12 +1070,18 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                         isStealable     = canStealOrPurge,
                         name            = name,
                         spellId         = spellId,
-                        priority        = current_aura_priority;
+                        priority        = current_aura_priority,
+                        timestamp       = now
                     };
                     debuffs:NewInput( new_aura );
                 end
             end
         end
+
+        --
+        -- Remove all stale auras that weren't included in this latest update
+        --
+        debuffs:RemoveAuraInputsByTimestamp( self.last_aura_update );
     end
 
     if highestpriority.enabled then
@@ -1262,13 +1276,18 @@ end
 ---
 function EnemyFrame:UNIT_HEALTH( unit_id )
 
-    if UnitIsDeadOrGhost( unit_id ) then
+    if UnitIsDead( unit_id ) then
         self:PlayerDied();
         return;
     end
 
     local health      = UnitHealth( unit_id );
     local max_health  = UnitHealthMax( unit_id );
+
+    if health == 0 then
+        self:PlayerDied();
+        return;
+    end
 
     self.modules.healthbar:UpdateHealth( unit_id, health, max_health );
 
