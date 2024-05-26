@@ -396,7 +396,8 @@ Constants.RaceToRacialSpellID =
     },
     [ "Dwarf" ]     = 20594,
     [ "Gnome" ]     = 20589,
-    [ "Human" ]     = 59752,
+    [ "Goblin" ]	= 69070,
+	[ "Human" ]     = 59752,
     [ "Night Elf" ] = 58984,
     [ "Orc" ] =
     {
@@ -411,6 +412,7 @@ Constants.RaceToRacialSpellID =
     [ "Tauren" ]    = 20549,
     [ "Troll" ]     = 26297,
     [ "Undead" ]    = 7744,
+	[ "Worgen" ]	= 68992
 };
 
 ---

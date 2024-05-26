@@ -713,6 +713,9 @@ end
 function Vantage:CreateEnemyFrame( score )
     local player_info   = self.NewPlayerFromPVPScoreInfo( score );
     local player_name   = player_info.name;
+
+    self:Debug( "[Vantage:CreateEnemyFrame] Creating enemy -> " .. player_name );
+
     self.EnemyFrames[ player_name ] = self:NewEnemyFrame( player_info );
     tinsert( self.EnemyOrder, player_name );
 end
@@ -808,9 +811,11 @@ function Vantage:ScanEnemiesByAllyTargets()
         if enemy_player_1 then
 
             enemy_player_1:UpdateAll( target_unit_id );
+            --[[
             if enemy_player_1:ShouldBroadcast() then
                 enemy_player_1:BroadcastState( timestamp );
             end
+            ]]--
 
             --
             -- If the ally had a target, check their target. Only update if
@@ -820,9 +825,11 @@ function Vantage:ScanEnemiesByAllyTargets()
             enemy_player_2 = self:GetEnemyFrameByUnitID( target_unit_id );
             if enemy_player_2 and enemy_player_1 ~= enemy_player_2 then
                 enemy_player_2:UpdateAll( target_unit_id );
+                --[[
                 if enemy_player_2:ShouldBroadcast() then
                     enemy_player_2:BroadcastState( timestamp );
                 end
+                ]]--
             end
 
         end
@@ -835,9 +842,11 @@ function Vantage:ScanEnemiesByAllyTargets()
         enemy_player_1 = self:GetEnemyFrameByName( self.PlayerInfo.target.name );
         if enemy_player_1 then
             enemy_player_1:UpdateAll( "target" );
+            --[[
             if enemy_player_1:ShouldBroadcast() then
                 enemy_player_1:BroadcastState( timestamp );
             end
+            --]]
         end
     end
 
@@ -848,9 +857,11 @@ function Vantage:ScanEnemiesByAllyTargets()
         enemy_player_1 = self:GetEnemyFrameByName( self.current_focus );
         if enemy_player_1 then
             enemy_player_1:UpdateAll( "focus" );
+            --[[
             if enemy_player_1:ShouldBroadcast() then
                 enemy_player_1:BroadcastState( timestamp );
             end
+            ]]--
         end
     end
 
@@ -875,7 +886,7 @@ function Vantage:SortEnemyPlayers( reposition )
         end
     end
 
-    if order_changed or reposition then
+    if reposition or order_changed then
         if InCombatLockdown() then
             self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self );
         end

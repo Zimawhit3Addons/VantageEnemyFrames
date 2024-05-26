@@ -395,7 +395,7 @@ function Vantage:InitializeBroadcast()
     ---@diagnostic disable-next-line: undefined-field
     AceComm:RegisterComm( VANTAGE_VERSION_PREFIX, OnVersionCheck );
     ---@diagnostic disable-next-line: undefined-field
-    AceComm:RegisterComm( VANTAGE_CHANNEL_PREFIX, OnChannelUpdate );
+    --AceComm:RegisterComm( VANTAGE_CHANNEL_PREFIX, OnChannelUpdate );
 end
 
 ----------------------------------------

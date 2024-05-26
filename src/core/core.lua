@@ -310,6 +310,25 @@ Vantage.broadcast_checker = nil;
 ----------------------------------------
 
 ---
+--- Checks the player for a same faction BG buff.
+---
+---@return boolean
+---
+local function HasSameFactionBuff()
+    local same_faction_bg = false;
+    for i = 1, 40 do
+        local name = UnitAura( "player", i, "HELPFUL" );
+        if not name then
+            break;
+        end
+        if name == "Alliance" or name == "Horde" then
+            same_faction_bg = true;
+        end
+    end
+    return same_faction_bg;
+end
+
+---
 ---
 ---
 local function DelayedUpdateMapId()
@@ -479,7 +498,7 @@ end
 --- @param timestamp number
 --- @return number
 ---
- function Vantage.ServerTimeToLocalTime( timestamp )
+function Vantage.ServerTimeToLocalTime( timestamp )
     Vantage:Debug( "[Vantage:ServerTimeToLocalTime] Server Time: " .. tostring( timestamp ) .. " | Local Time: " .. tostring( timestamp - ( GetServerTime() - GetTime() ) ) );
     return timestamp - ( GetServerTime() - GetTime() );
 end
@@ -533,12 +552,10 @@ function Vantage:UpdateBGFaction()
     local player_faction = UnitFactionGroup( "player" ) == "Horde" and 0 or 1;
 
     --
-    -- The same faction buff will always be at index 1. 
-    -- 
     -- If we're in a same faction BG, swap the faction.
     --
-    local faction_buff = UnitAura( "player", 1, "HELPFUL" );
-    if faction_buff and ( faction_buff == "Alliance" or faction_buff == "Horde" ) then
+    if HasSameFactionBuff() then
+        self:Debug( "[Vantage:UpdateBGFaction] Same faction BG detected." );
         self.PlayerInfo.faction = player_faction == 0 and 1 or 0;
     else
         self.PlayerInfo.faction = player_faction;
