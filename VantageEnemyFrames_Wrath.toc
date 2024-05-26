@@ -1,4 +1,4 @@
-## Interface: 40400                                                                                                                                                            
+## Interface: 30403                                                                                                                                                                 
 ## Title: VantageEnemyFrames                                                                                                                                                                 
 ## Version: @project-version@
 ## Author: Zimawhit3
@@ -18,7 +18,7 @@ src/core/locales/enUS.lua
 #
 # Constants
 #
-src/core/cataclysm/constants.lua
+src/core/wotlk/constants.lua
 src/core/constants.lua
 
 #

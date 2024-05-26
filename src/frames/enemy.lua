@@ -312,7 +312,10 @@ function EnemyFrame:Initialize( player_info )
     self:SetScript( 'OnDragStop', self.OnDragStop );
 
     self:ApplyButtonSettings();
-    self:Show();
+
+    if not self:IsShown() then
+        self:Show();
+    end
 end
 
 ---
@@ -443,22 +446,15 @@ function EnemyFrame:Reset()
     self:SetClampedToScreen( false );
     self:SetScript( 'OnDragStart', nil );
     self:SetScript( 'OnDragStop', nil );
-    self.modules.buffs:Reset();
-    self.modules.castbar:Reset();
-    self.modules.class:Reset();
-    self.modules.combatindicator:Reset();
-    self.modules.debuffs:Reset();
-    self.modules.drtracker:Reset();
-    self.modules.healthbar:Reset();
-    self.modules.highestpriority:Reset();
-    self.modules.objective:Reset();
-    self.modules.racial:Reset();
-    self.modules.resource:UpdateMinMaxValues( 1 );
-    self.modules.targetcounter:Reset();
-    self.modules.targetindicator:Reset();
-    self.modules.trinket:Reset();
-    self.player_info.alive = true;
-    self.player_info.deaths = 0;
+
+    for _, frame in pairs( self.modules ) do
+        if frame.Reset then
+            frame:Reset();
+        end
+        frame.position_set = false;
+    end
+
+    self.player_info:Reset();
 end
 
 -----------------------------------------
@@ -601,10 +597,15 @@ function EnemyFrame:SetModulePositions()
         self:SetModulePosition( frame, true );
 
         if frame.enabled then
-            frame:Show();
+            if not frame:IsShown() then
+                frame:Show();
+            end
             frame:ApplyAllSettings();
+
         else
-            frame:Hide();
+            if frame:IsShown() then
+                frame:Hide();
+            end
             if frame.Reset then
                 frame:Reset();
             end
@@ -787,7 +788,7 @@ function EnemyFrame:BroadcastState( timestamp )
                 tinsert( buffs, highest );
             end
         end
-        ]]--
+        
         Vantage.Broadcast(
             Constants.MESSAGE_KINDS.MESSAGE_KIND_STATE,
             timestamp,
@@ -800,6 +801,7 @@ function EnemyFrame:BroadcastState( timestamp )
             --buffs,
             --debuffs
         );
+        ]]--
         self.last_broadcast = now;
     end
 end
@@ -1172,6 +1174,7 @@ function EnemyFrame:SPELL_AURA_REMOVED( src_name, dest_name, spell_id, spell_nam
     self.modules.highestpriority:AuraRemoved( spell_id );
     self.modules.drtracker:AuraRemoved( spell_id );
 
+    --[[
     if not Vantage.TestingMode.active then
         Vantage.Broadcast(
             Constants.MESSAGE_KINDS.MESSAGE_KIND_AURA_REMOVED,
@@ -1181,7 +1184,7 @@ function EnemyFrame:SPELL_AURA_REMOVED( src_name, dest_name, spell_id, spell_nam
             container.is_harmful
         );
     end
-
+    ]]--
 end
 
 ---
@@ -1199,6 +1202,7 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
 
     if self.modules.racial:SPELL_CAST_SUCCESS( spell_id, time ) or
        self.modules.trinket:SPELL_CAST_SUCCESS( spell_id, time ) then
+        --[[
         if not Vantage.TestingMode.active then
             Vantage.Broadcast(
                 Constants.MESSAGE_KINDS.MESSAGE_KIND_COOLDOWN,
@@ -1207,6 +1211,7 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
                 spell_id
             );
         end
+        ]]--
         return;
     end
 

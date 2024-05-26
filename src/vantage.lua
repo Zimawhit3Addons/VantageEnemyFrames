@@ -140,7 +140,7 @@ end
 ---
 function Vantage:OnEnable()
 
-    if GetServerExpansionLevel() >= 3 then
+    if GetServerExpansionLevel() >= 4 then
         self:Notify( "The current expansion is unsupported. Please visit https://www.github.com/zimawhit3/VantageEnemyFrames for more information." );
         return;
     end

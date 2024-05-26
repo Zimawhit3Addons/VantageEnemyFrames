@@ -197,6 +197,22 @@ end
 ---
 ---
 ---
+function PlayerInfo:Reset()
+    self.alive          = false;
+    self.class          = "";
+    self.deaths         = 0;
+    self.faction        = 0;
+    self.guid           = "";
+    self.last_target    = nil;
+    self.level          = 0;
+    self.name           = "";
+    self.race           = "";
+    self.target         = nil;
+end
+
+---
+---
+---
 --- @param score PVPScoreInfo
 ---
 function PlayerInfo:UpdatePlayer( score )

@@ -116,7 +116,7 @@ local REZ_EVENTS =
 local function parseBattlefieldScore( index )
     local name, faction, race, classTag, specName, deaths, _;
     if HAS_SPECS then
-        name, _, _, deaths, _, faction, race, _, classTag, _, _, _, _, _, _, specName = GetBattlefieldScore( index );
+        name, _, _, deaths, _, faction, _, race, _, classTag, _, _, _, _, _, _, specName = GetBattlefieldScore( index );
     else
         name, _, _, deaths, _, faction, _, race, _, classTag = GetBattlefieldScore( index );
     end
@@ -461,7 +461,7 @@ end
 function Vantage:UPDATE_BATTLEFIELD_SCORE()
 
     local bg_scores                     = getBattleFieldScores();
-    local new_players_added_or_removed  = false;
+    local new_players_added_or_removed  = #self.EnemyOrder ~= #bg_scores;
     local current_enemy;
 
     for name, score in pairs( bg_scores ) do
@@ -496,10 +496,9 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                 -- There's spaces available - create a new frame for the enemy. 
                 --
                 else
+                    self:Debug( "[Vantage:UPDATE_BATTLEFIELD_SCORE] Player count: " .. num_enemies );
                     self:CreateEnemyFrame( score );
                 end
-
-                new_players_added_or_removed = true;
             end
         end
     end
@@ -510,7 +509,6 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
     for name, enemy in pairs( self.EnemyFrames ) do
         if not bg_scores[ name ] then
             self:RemoveEnemyPlayer( enemy );
-            new_players_added_or_removed = true;
         end
     end
 
