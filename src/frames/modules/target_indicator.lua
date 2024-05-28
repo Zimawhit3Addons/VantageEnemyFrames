@@ -232,42 +232,44 @@ end
 ---
 ---
 function TargetIndicator:UpdateTargetIndicators()
-    if self.enabled and self.enemy then
+    if self.enabled and self.enemy and self.enemy.targeted_by then
+        local num_targs = #self.enemy.targeted_by;
+        if num_targs then
 
-        for i = 1, #self.enemy.targeted_by do
+            for i = 1, num_targs do
+                local current_player = self.enemy.targeted_by[ i ];
+                local current_symbol = self.symbols[ i ];
+                if not current_symbol then
 
-            local current_player = self.enemy.targeted_by[ i ];
-            local current_symbol = self.symbols[ i ];
-            if not current_symbol then
+                    current_symbol = CreateFrame( "Frame", nil, self, BackdropTemplateMixin and "BackdropTemplate" );
 
-                current_symbol = CreateFrame( "Frame", nil, self, BackdropTemplateMixin and "BackdropTemplate" );
+                    ---@diagnostic disable-next-line: param-type-mismatch
+                    current_symbol:SetBackdrop({
+                        bgFile      = "Interface/Buttons/WHITE8X8", -- drawlayer "BACKGROUND"
+                        edgeFile    = 'Interface/Buttons/WHITE8X8', -- drawlayer "BORDER"
+                        edgeSize    = 1
+                    });
+
+                    ---@diagnostic disable-next-line: param-type-mismatch
+                    current_symbol:SetBackdropBorderColor( 0, 0, 0, 1 );
+
+                    self.symbols[ i ] = current_symbol;
+                    self:SetSizeAndPosition( i );
+                end
+
+                local class_color = current_player:ClassColor();
 
                 ---@diagnostic disable-next-line: param-type-mismatch
-                current_symbol:SetBackdrop({
-                    bgFile      = "Interface/Buttons/WHITE8X8", -- drawlayer "BACKGROUND"
-                    edgeFile    = 'Interface/Buttons/WHITE8X8', -- drawlayer "BORDER"
-                    edgeSize    = 1
-                });
-
-                ---@diagnostic disable-next-line: param-type-mismatch
-                current_symbol:SetBackdropBorderColor( 0, 0, 0, 1 );
-
-                self.symbols[ i ] = current_symbol;
-                self:SetSizeAndPosition( i );
+                current_symbol:SetBackdropColor( class_color.r, class_color.g, class_color.b );
+                current_symbol:Show();
             end
 
-            local class_color = current_player:ClassColor();
-
-            ---@diagnostic disable-next-line: param-type-mismatch
-            current_symbol:SetBackdropColor( class_color.r, class_color.g, class_color.b );
-            current_symbol:Show();
-        end
-
-        --
-        -- Hide no longer used ones
-        --
-        for i = #self.enemy.targeted_by + 1, #self.symbols do
-            self.symbols[ i ]:Hide();
+            --
+            -- Hide no longer used ones
+            --
+            for i = num_targs + 1, #self.symbols do
+                self.symbols[ i ]:Hide();
+            end
         end
     end
 end

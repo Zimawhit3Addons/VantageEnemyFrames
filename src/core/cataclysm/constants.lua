@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 ---@script: constants.lua
 ---@author: zimawhit3
----@desc:   This module holds the WOTLK constants used by the addon.
+---@desc:   This module holds the Cata constants used by the addon.
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -29,6 +29,7 @@ Constants.Interruptdurations =
     [57994]	    = 2, -- [Shaman] Wind Shear
     [19647]	    = 6, -- [Warlock] Spell Lock
     [2139]	    = 6, -- [Mage] Counterspell
+    [96231]     = 4, -- [Paladin] Rebuke
 };
 
 ---

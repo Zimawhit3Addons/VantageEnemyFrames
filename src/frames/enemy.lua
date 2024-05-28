@@ -379,7 +379,7 @@ end
 function EnemyFrame:SetBindings()
 
     if InCombatLockdown() then
-        return Vantage.QueueForUpdateAfterCombat( "SetBindings", self );
+        return Vantage.QueueForUpdateAfterCombat( "SetBindings", self, nil );
     end
 
     --
@@ -426,7 +426,7 @@ function EnemyFrame:SetBindings()
     end
     if needs_update then
         if InCombatLockdown() then
-            return Vantage.QueueForUpdateAfterCombat( "SetBindings", self );
+            return Vantage.QueueForUpdateAfterCombat( "SetBindings", self, nil );
         end
         for attribute, value in pairs( new_state ) do
             self:SetAttribute( attribute, value );
@@ -840,6 +840,7 @@ end
 --- Update the `EnemyFrame` with the new player's information.
 ---
 function EnemyFrame:PlayerDetailsChanged()
+    Vantage:Debug( "[EnemyFrame:PlayerDetailsChanged] Player " .. self.player_info.name .. " info changed." );
     self:SetBindings();
     self.modules.class:PlayerDetailsChanged( self.player_info );
     self.modules.healthbar:PlayerDetailsChanged( self.player_info );
@@ -933,7 +934,6 @@ function EnemyFrame:UpdateAll( temp_unit_id )
                 self.player_info.race = UnitRace( temp_unit_id );
                 self.modules.racial:PlayerDetailsChanged( self.player_info );
             end
-
         end
         self:RangeCheck( temp_unit_id );
         self.last_on_update = now;
@@ -983,28 +983,29 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
             local current_aura_priority = Vantage.GetSpellPriority( spellId ) or 0;
             if current_aura_priority >= priority then
 
-                local current_aura = buffs:FindChildFrameByAuraAttribute( "spellId", spellId );
+                local current_aura_frame = buffs:FindChildFrameByAuraAttribute( "spellId", spellId );
 
                 --
                 -- Update the existing aura frame with new duration
                 --
-                if current_aura then
-                    if current_aura.input.expirationTime ~= expirationTime then
-                        current_aura.cooldown:Clear();
-                        current_aura.cooldown:SetCooldown( expirationTime - duration, duration );
+                if current_aura_frame then
+                    current_aura_frame.input.timestamp = now;
+                    if current_aura_frame.input.expirationTime ~= expirationTime then
+                        current_aura_frame.cooldown:Clear();
+                        current_aura_frame.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 --
                 -- Check the highest_priority module, and update it if the expiration time differs
-                -- from the curreent.
+                -- from the current.
                 -- 
                 elseif highestpriority.enabled and highestpriority.displayed_aura and highestpriority.displayed_aura.spellId == spellId then
+                    highestpriority.displayed_aura.timestamp = now;
                     if highestpriority.displayed_aura.expirationTime ~= expirationTime then
                         highestpriority.cooldown:Clear();
                         highestpriority.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 else
-                    local new_aura =
-                    {
+                    local new_aura = {
                         applications    = count,
                         dispelName      = debuffType,
                         duration        = duration,
@@ -1046,22 +1047,23 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                 -- Update the existing aura frame with new duration
                 --
                 if current_aura then
+                    current_aura.input.timestamp = now;
                     if current_aura.input.expirationTime ~= expirationTime then
                         current_aura.cooldown:Clear();
                         current_aura.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 --
                 -- Check the highest_priority module, and update it if the expiration time differs
-                -- from the curreent.
+                -- from the current.
                 -- 
                 elseif highestpriority.enabled and highestpriority.displayed_aura and highestpriority.displayed_aura.spellId == spellId then
+                    highestpriority.displayed_aura.timestamp = now;
                     if highestpriority.displayed_aura.expirationTime ~= expirationTime then
                         highestpriority.cooldown:Clear();
                         highestpriority.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 else
-                    local new_aura =
-                    {
+                    local new_aura = {
                         applications    = count,
                         auraInstanceID  = nil,
                         dispelName      = debuffType,
@@ -1087,7 +1089,7 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
     end
 
     if highestpriority.enabled then
-        highestpriority:Update();
+        highestpriority:Update( now );
     end
 
     if buffs.enabled then
@@ -1202,16 +1204,6 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
 
     if self.modules.racial:SPELL_CAST_SUCCESS( spell_id, time ) or
        self.modules.trinket:SPELL_CAST_SUCCESS( spell_id, time ) then
-        --[[
-        if not Vantage.TestingMode.active then
-            Vantage.Broadcast(
-                Constants.MESSAGE_KINDS.MESSAGE_KIND_COOLDOWN,
-                GetServerTime(),
-                self:Ambiguate(),
-                spell_id
-            );
-        end
-        ]]--
         return;
     end
 

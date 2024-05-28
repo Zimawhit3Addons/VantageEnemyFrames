@@ -384,13 +384,19 @@ function EnemyAura:RemoveAuraInputBySpellId( spell_id )
 end
 
 ---
----
+--- Remove expired aura inputs by their timestamp.
 ---
 --- @param timestamp number
 ---
 function EnemyAura:RemoveAuraInputsByTimestamp( timestamp )
     for i = #self.inputs, 1, -1 do
-        if self.inputs[ i ].timestamp <= timestamp then
+        --
+        -- Remove the aura input. If the timestamp doesn't exist something went
+        -- wrong, and in that case, it should get removed too
+        --
+        local input_ts = self.inputs[ i ].timestamp;
+        if input_ts < timestamp then
+            Vantage:Debug( "[EnemyAura:RemoveAuraInputsByTimestamp] Removing buff: " .. ( self.inputs[ i ].name or "none" ) .. " Input Timestamp: " .. input_ts .. " Update Timestamp: " .. timestamp );
             tremove( self.inputs, i );
         end
     end

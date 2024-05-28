@@ -216,6 +216,11 @@ end
 ---
 function EnemyLevel:UpdateLevel( unit_id )
     if self.enabled then
-        self:SetLevel( UnitLevel( unit_id ) );
+        local level = UnitLevel( unit_id );
+        if level then
+            if self:GetFont() then
+                self:SetLevel( level );
+            end
+        end
     end
 end
