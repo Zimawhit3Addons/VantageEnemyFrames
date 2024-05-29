@@ -1245,7 +1245,7 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
         if interrupt_duration and self.is_channeling then
             self.is_channeling = false;
             if self.modules.highestpriority.enabled then
-                self.modules.highestpriority:GotInterrupted( spell_id, interrupt_duration );
+                self.modules.highestpriority:UpdateActiveInterrupt( spell_id, interrupt_duration );
             end
         end
 
@@ -1262,7 +1262,7 @@ end
 function EnemyFrame:SPELL_INTERRUPT( src_name, dest_name, spell_id )
     local interrupt_duration = Constants.Interruptdurations[ spell_id ];
     if interrupt_duration then
-        self.modules.highestpriority:GotInterrupted( spell_id, interrupt_duration );
+        self.modules.highestpriority:UpdateActiveInterrupt( spell_id, interrupt_duration );
     end
 end
 

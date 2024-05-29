@@ -241,16 +241,19 @@ function EnemyHighestPriority:GetCurrentHighestPriority()
     end
 
     if highest_heap then
+
         --
-        -- If we have a taken buff, we need to handle it.
+        -- If we have a taken buff, we need to handle it. We are only interested in
+        -- an aura from the AuraHeap; Interrupts are handled later.
         --
-        if self.displayed_aura then
+        if self.displayed_aura and self.displayed_aura ~= self.active_interrupt then
             --
             -- Current highest priority aura is less than the displayed aura, just
             -- return the already displayed aura.
             --
             if highest_aura.priority < self.displayed_aura.priority then
                 return nil;
+
             --
             -- Current highest priority aura is equal to the displayed aura, return
             -- the aura with the longest remaining time left.
@@ -261,6 +264,7 @@ function EnemyHighestPriority:GetCurrentHighestPriority()
                     self:PutBack( self.displayed_aura );
                     self.displayed_aura = nil;
                 end
+
             --
             -- Current highest priority aura is greater than the displayed aura, we
             -- need to reinsert the displayed aura onto the frame.
@@ -316,24 +320,56 @@ end
 ---
 ---
 ---
+function EnemyHighestPriority:HideAura()
+    if self:IsShown() then
+        self:Hide();
+    end
+    if self.class.enabled and not self.class:IsShown() then
+        self.class:Show();
+    end
+end
+
+---
+---
+---
+function EnemyHighestPriority:ShowAura()
+    if not self:IsShown() then
+        self:Show();
+    end
+    if self.class:IsShown() then
+        self.class:Hide();
+    end
+end
+
+---
+---
+---
 --- @param spell_id number
 --- @param duration number
 ---
 function EnemyHighestPriority:UpdateActiveInterrupt( spell_id, duration )
+
     --
     -- Set the active interrupt
     --
     if spell_id > 0 then
-        local current_time = GetTime();
+        local current_time      = GetTime();
+        local priority          = Vantage.GetSpellPriority( spell_id ) or 4;
+        local current_priority  = self.active_interrupt.priority;
+        local expiration_time   = current_time + duration;
 
-        self.active_interrupt.name              = GetSpellInfo( spell_id );
-        self.active_interrupt.spellId           = spell_id;
-        self.active_interrupt.icon              = GetSpellTexture( spell_id );
-        self.active_interrupt.expirationTime    = current_time + duration;
-        self.active_interrupt.duration          = duration;
-        ---@diagnostic disable-next-line: inject-field
-        self.active_interrupt.priority          = Vantage.GetSpellPriority( spell_id ) or 4;
-        self.active_interrupt.timestamp         = current_time + duration;
+        if ( priority > current_priority ) or
+           ( priority == current_priority and expiration_time > self.active_interrupt.expirationTime ) then
+
+            self.active_interrupt.name              = GetSpellInfo( spell_id );
+            self.active_interrupt.spellId           = spell_id;
+            self.active_interrupt.icon              = GetSpellTexture( spell_id );
+            self.active_interrupt.expirationTime    = expiration_time;
+            self.active_interrupt.duration          = duration;
+            self.active_interrupt.priority          = Vantage.GetSpellPriority( spell_id ) or 4;
+            self.active_interrupt.timestamp         = expiration_time;
+        end
+
     --
     -- Reset the active interrupt
     --
@@ -343,7 +379,6 @@ function EnemyHighestPriority:UpdateActiveInterrupt( spell_id, duration )
         self.active_interrupt.icon              = 0;
         self.active_interrupt.expirationTime    = 0;
         self.active_interrupt.duration          = 0;
-        ---@diagnostic disable-next-line: inject-field
         self.active_interrupt.priority          = 0;
         self.active_interrupt.timestamp         = 0;
     end
@@ -356,11 +391,10 @@ end
 --- @param aura any
 ---
 function EnemyHighestPriority:PutBack( aura )
+    assert( aura ~= self.active_interrupt, "Active interrupt passed to EnemyHighestPriority:PutBack" );
     if aura.isHarmful then
-        --Vantage:Debug( "[EnemyHighestPriority:PutBack] Putting aura " .. ( aura.name or "none" ) .. " back into debuff heap" );
         self.debuffs:NewInput( aura );
     else
-        --Vantage:Debug( "[EnemyHighestPriority:PutBack] Putting aura " .. ( aura.name or "none" ) .. " back into buff heap" );
         self.buffs:NewInput( aura );
     end
 end
@@ -400,11 +434,55 @@ function EnemyHighestPriority:SetOnTop()
 end
 
 ---
+--- 
+---
+--- @param priority_aura (AuraData|VantageAura)? An aura from the aura heap to compare
+--- @return boolean # True if an interrupt was set, otherwise false
+---
+function EnemyHighestPriority:SetInterruptAura( priority_aura )
+
+    if not ( self.active_interrupt.spellId > 0 ) then
+        return false;
+    end
+
+    if self.active_interrupt.expirationTime <= GetTime() then
+        self:UpdateActiveInterrupt( 0, 0 );
+        return false;
+    end
+
+    --
+    -- If there's a priority aura from an aura heap, compare it's priority to
+    -- active interrupts.
+    --
+    -- In the case the active interrupt's priority is higher, we place the aura
+    -- back into the heap it came from.
+    --
+    if priority_aura then
+
+        assert( self.active_interrupt ~= priority_aura, "EnemyHighestPriority:SetInterruptAura - Passed in aura was an active_interrupt!" );
+
+        if self.active_interrupt.priority < priority_aura.priority then
+            return false;
+        end
+
+        Vantage:Debug( string.format( "[EnemyHighestPriority:SetInterruptAura] *** Interrupt Priority(%s): %d | Priority Aura(%s): %d ***", self.active_interrupt.name, self.active_interrupt.priority, priority_aura.name, priority_aura.priority ) );
+        self:PutBack( priority_aura );
+
+    else
+        Vantage:Debug( string.format( "[EnemyHighestPriority:SetInterruptAura] *** Interrupt Priority(%s): %d ***", self.active_interrupt.name, self.active_interrupt.priority ) );
+    end
+
+    self:SetDisplayedAura( self.active_interrupt );
+    return true;
+end
+
+---
 ---
 ---
 --- @param priority_aura AuraData|VantageAura
 ---
 function EnemyHighestPriority:SetDisplayedAura( priority_aura )
+
     self.displayed_aura = priority_aura;
     self.icon:SetTexture( priority_aura.icon );
 
@@ -447,108 +525,50 @@ function EnemyHighestPriority:Update( last_update )
 
     self:SetOnTop();
 
-    local current_time  = GetTime();
     local priority_aura = self:GetCurrentHighestPriority();
 
     --
-    -- Reset the active interrupt if its set and has expired - otherwise, set
-    -- the priority aura to the interrupt if the priority aura is less than the
-    -- interrupt's priority.
-    --
-    -- TODO: 
-    -- - Instead of fucking with the priority_aura, we should handle the interrupt
-    --   directly and never put it into the buff/debuff heap
-    --
-    if self.active_interrupt.spellId > 0 then
-        if self.active_interrupt.expirationTime <= current_time then
-            self:UpdateActiveInterrupt( 0, 0 );
-        elseif not priority_aura then
-            --if self.displayed_aura then
-            --    self:PutBack( self.displayed_aura );
-            --end
-            priority_aura = self.active_interrupt;
-        elseif self.active_interrupt.priority > priority_aura.priority then
-            Vantage:Debug( "[EnemyHighestPriority:Update] Interrupt has higher priority. Resetting priority_aura: " .. ( priority_aura.name or "none" ) );
-            self:PutBack( priority_aura );
-            priority_aura = self.active_interrupt;
-        end
-    end
-
-    --
-    -- There's another aura we care about
+    -- There's an aura taken from the buff/debuff heap to display.
     --
     if priority_aura then
-        --Vantage:Debug( "[EnemyHighestPriority:Update] New aura at highest priority. Last updated: " .. ( last_update or "none" ) .. " | Aura: " .. ( priority_aura.name or "none" ) );
-
-        --
-        -- TODO:
-        -- - this should never get hit
-        --
-        if self.displayed_aura then
-            Vantage:Debug( "[EnemyHighestPriority:Update] ****** Priority aura existing while displayed_aura is set? ******" );
-            Vantage:Debug( "[EnemyHighestPriority:Update] Displayed aura: " .. self.displayed_aura.name );
-
-            --
-            -- There's a new aura
-            --
-            if priority_aura.spellId ~= self.displayed_aura.spellId then
-                self:SetDisplayedAura( priority_aura );
-            --
-            -- The current aura was refreshed
-            --
-            elseif priority_aura.expirationTime ~= self.displayed_aura.expirationTime then
-                Vantage:Debug( "[EnemyHighestPriority:Update] Aura was refreshed. Last updated: " .. ( last_update or "none" ) );
-                Vantage:Debug( string.format( "[EnemyHighestPriority:Update] Priority  Aura - %s | Duration: %d | Expiration: %d", priority_aura.name or "none", priority_aura.duration or "none", priority_aura.expirationTime or "none" ) );
-                self.displayed_aura.expirationTime = priority_aura.expirationTime;
-                self.cooldown:Clear();
-                self.cooldown:SetCooldown( priority_aura.expirationTime - priority_aura.duration, priority_aura.duration );
-            else
-                --Vantage:Debug( "[EnemyHighestPriority:Update] Something in container and we have an aura. Last updated: " .. ( last_update or "none" ) );
-                --Vantage:Debug( string.format( "[EnemyHighestPriority:Update] Priority  Aura - %s | Duration: %d | Expiration: %d", priority_aura.name or "none", priority_aura.duration or "none", priority_aura.expirationTime or "none" ) );
-                --Vantage:Debug( string.format( "[EnemyHighestPriority:Update] Displayed Aura - %s | Duration: %d | Expiration: %d", self.displayed_aura.name or "none", self.displayed_aura.duration or "none", self.displayed_aura.expirationTime or "none" ) );
-            end
-        --
-        -- There's a new aura
-        --
-        else
-            if not self:IsShown() then
-                self:Show();
-            end
-            if self.class:IsShown() then
-                self.class:Hide();
-            end
+        assert( priority_aura ~= self.active_interrupt, "EnemyHighestPriority:GetCurrentHighestPriority returned an interrupt!" );
+        if not self:SetInterruptAura( priority_aura ) then
             self:SetDisplayedAura( priority_aura );
         end
+
+        self:ShowAura();
+        return;
+    end
+
     --
     -- There were no auras to take, and we don't have a shown aura
     --
-    elseif not self.displayed_aura then
-        if self:IsShown() then
-            self:Hide();
-        end
-        if self.class.enabled then
-            if not self.class:IsShown() then
-                self.class:Show();
-            end
-        end
-
-    --
-    --
-    --
-    else
-        if self.displayed_aura.timestamp and last_update and
-           self.displayed_aura.timestamp < last_update then --and self.displayed_aura ~= self.active_interrupt then
-            self:Reset();
+    if not self.displayed_aura then
+        if self:SetInterruptAura() then
+            self:ShowAura();
             return;
         end
-
-        --Vantage:Debug( "[EnemyHighestPriority:Update] Nothing in container and we have an aura. Last updated: " .. ( last_update or "none" ) );
-        --Vantage:Debug( string.format( "[EnemyHighestPriority:Update] Aura - %s | Duration: %d | Expiration: %d", self.displayed_aura.name or "none", self.displayed_aura.duration or "none", self.displayed_aura.expirationTime or "none" ) );
-        --if not self.displayed_aura.name or ( last_update and last_update >= self.displayed_aura.expirationTime ) then
-        --    self:Reset();
-        --    return;
-        --end
+        self:HideAura();
+        return;
     end
+
+    --
+    -- There's no auras to take, and we have an aura displayed that is from the 
+    -- aura heap. Check if the interrupt takes priority over the current displayed 
+    -- aura.
+    --
+    if self.displayed_aura ~= self.active_interrupt and self:SetInterruptAura( self.displayed_aura ) then
+        assert( self.active_interrupt == self.displayed_aura, "Active interrupt should be equal to displayed aura!" );
+        return;
+    end
+
+    --
+    -- Check if the displayed aura is stale, and, if it is, remove it.
+    --
+    if self.displayed_aura.timestamp and last_update and self.displayed_aura.timestamp < last_update then
+        self:Reset();
+    end
+
 end
 
 -----------------------------------------
@@ -565,17 +585,6 @@ function EnemyHighestPriority:AuraRemoved( spell_id )
     if self.displayed_aura and self.displayed_aura.spellId == spell_id then
         self:Reset();
     end
-end
-
----
----
----
---- @param spell_id number
---- @param duration number
----
-function EnemyHighestPriority:GotInterrupted( spell_id, duration )
-    --self:UpdateActiveInterrupt( spell_id, duration );
-    --self:Update();
 end
 
 ---
