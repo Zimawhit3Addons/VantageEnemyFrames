@@ -56,7 +56,7 @@ local Vantage = LibStub( "AceAddon-3.0" ):GetAddon( "Vantage" );
 ---
 ---
 ---
-local VANTAGE_GITHUB_URI = "https://www.github.com/zimawhit3/VantageEnemyFrames";
+local VANTAGE_GITHUB_URI = "https://github.com/Zimawhit3Addons/VantageEnemyFrames";
 
 ---
 ---

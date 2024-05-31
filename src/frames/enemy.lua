@@ -870,6 +870,7 @@ function EnemyFrame:PlayerDied( deaths )
         self.modules.highestpriority:Reset();
         self.modules.objective:HideObjective();
         self.modules.resource:Reset();
+
     elseif deaths then
         --
         -- This player most likely was dead when we joined or reloaded so we had an incorrect number of 

@@ -19,7 +19,7 @@ local AceConfigDialog       = LibStub( "AceConfigDialog-3.0" )
 -----------------------------------------
 --                Lua
 -----------------------------------------
-local fmt   = string.format
+local fmt = string.format
 
 -----------------------------------------
 --              Blizzard

@@ -20,6 +20,7 @@ local BigDebuffs            = Ace3:GetAddon( "BigDebuffs", true )
 --                Lua
 -----------------------------------------
 local fmt       = string.format
+local select    = select
 local tinsert   = table.insert
 
 -----------------------------------------
@@ -316,17 +317,16 @@ Vantage.broadcast_checker = nil;
 ---@return boolean
 ---
 local function HasSameFactionBuff()
-    local same_faction_bg = false;
     for i = 1, 40 do
         local name = UnitAura( "player", i, "HELPFUL" );
         if not name then
             break;
         end
         if name == "Alliance" or name == "Horde" then
-            same_faction_bg = true;
+            return true;
         end
     end
-    return same_faction_bg;
+    return false;
 end
 
 ---
@@ -583,23 +583,24 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
     -- Eye of the Storm
     --
     elseif instance_id == 566 then
-        self.BattleGroundSize = 15;
+        self.BattleGroundSize           = 15;
+        self.BattleGroundStartMessage   = "Let the battle begin!";
 
     --
     -- Eye of the Storm (Rated)
     --
     elseif instance_id == 968 then
-        self.BattleGroundSize = 10;
+        self.BattleGroundSize           = 10;
+        self.BattleGroundStartMessage   = "Let the battle begin!";
 
     --
     -- Arathi Basin
     --
     elseif instance_id == 529 or instance_id == 1681 or instance_id == 2107 then
-        if is_rated then
-            self.BattleGroundSize = 10;
-        else
-            self.BattleGroundSize = 15;
+        if is_rated then    self.BattleGroundSize = 10;
+        else                self.BattleGroundSize = 15;
         end
+        self.BattleGroundStartMessage = "Let the battle begin!";
 
     --
     -- Alterac Valley
@@ -625,7 +626,8 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
     -- Strand of the Ancients
     --
     elseif instance_id == 607 then
-        self.BattleGroundSize = 15;
+        self.BattleGroundSize           = 15;
+        self.BattleGroundStartMessage   = "Let the battle begin!";
 
     --
     -- Isle of Conquest
@@ -669,4 +671,3 @@ function Vantage:UpdateMapID()
         CTimerAfter( 1, DelayedUpdateMapId );
     end
 end
-
