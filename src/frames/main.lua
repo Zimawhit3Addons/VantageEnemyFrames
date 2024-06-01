@@ -31,7 +31,6 @@ local tsort     = table.sort
 -----------------------------------------
 local CreateFramePool               = CreateFramePool
 local CTimerNewTicker               = C_Timer.NewTicker
-local GetServerTime                 = GetServerTime
 local GetUnitName                   = GetUnitName
 local InCombatLockdown              = InCombatLockdown
 local PLAYER_COUNT_ALLIANCE         = PLAYER_COUNT_ALLIANCE
@@ -159,7 +158,7 @@ function Vantage:ApplyBGSizeSettings()
     self.BG_Config = self.Config[ tostring( self.BattleGroundSize ) ];
 
     if InCombatLockdown() then
-        self.QueueForUpdateAfterCombat( "ApplyBGSizeSettings", self );
+        self.QueueForUpdateAfterCombat( "ApplyBGSizeSettings", self, nil );
         return;
     end
 
@@ -191,6 +190,10 @@ end
 --- sorted order.
 ---
 function Vantage:ButtonPositioning()
+
+    if InCombatLockdown() then
+        error( "[Vantage:ButtonPositioning] Called while in combat.." );
+    end
 
     local config        = self.BG_Config;
     local player_count  = #self.EnemyOrder;
@@ -424,7 +427,7 @@ end
 ---
 function Vantage:UpdateEnemyPlayerCount( reposition )
     if InCombatLockdown() then
-        self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self );
+        self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self, reposition );
     else
         self:SortEnemyPlayers( reposition or false );
         self:UpdatePlayerCount();
@@ -713,6 +716,9 @@ end
 function Vantage:CreateEnemyFrame( score )
     local player_info   = self.NewPlayerFromPVPScoreInfo( score );
     local player_name   = player_info.name;
+
+    self:Debug( "[Vantage:CreateEnemyFrame] Creating enemy -> " .. player_name );
+
     self.EnemyFrames[ player_name ] = self:NewEnemyFrame( player_info );
     tinsert( self.EnemyOrder, player_name );
 end
@@ -795,11 +801,10 @@ end
 ---
 function Vantage:ScanEnemiesByAllyTargets()
 
-    local enemy_player_1, enemy_player_2, target_unit_id, timestamp;
+    local enemy_player_1, enemy_player_2, target_unit_id;
     for name in pairs( self.allies ) do
 
         target_unit_id  = name .. "-target";
-        timestamp       = GetServerTime();
 
         --
         -- Check the target of ally
@@ -808,9 +813,6 @@ function Vantage:ScanEnemiesByAllyTargets()
         if enemy_player_1 then
 
             enemy_player_1:UpdateAll( target_unit_id );
-            if enemy_player_1:ShouldBroadcast() then
-                enemy_player_1:BroadcastState( timestamp );
-            end
 
             --
             -- If the ally had a target, check their target. Only update if
@@ -820,9 +822,6 @@ function Vantage:ScanEnemiesByAllyTargets()
             enemy_player_2 = self:GetEnemyFrameByUnitID( target_unit_id );
             if enemy_player_2 and enemy_player_1 ~= enemy_player_2 then
                 enemy_player_2:UpdateAll( target_unit_id );
-                if enemy_player_2:ShouldBroadcast() then
-                    enemy_player_2:BroadcastState( timestamp );
-                end
             end
 
         end
@@ -835,9 +834,6 @@ function Vantage:ScanEnemiesByAllyTargets()
         enemy_player_1 = self:GetEnemyFrameByName( self.PlayerInfo.target.name );
         if enemy_player_1 then
             enemy_player_1:UpdateAll( "target" );
-            if enemy_player_1:ShouldBroadcast() then
-                enemy_player_1:BroadcastState( timestamp );
-            end
         end
     end
 
@@ -848,9 +844,6 @@ function Vantage:ScanEnemiesByAllyTargets()
         enemy_player_1 = self:GetEnemyFrameByName( self.current_focus );
         if enemy_player_1 then
             enemy_player_1:UpdateAll( "focus" );
-            if enemy_player_1:ShouldBroadcast() then
-                enemy_player_1:BroadcastState( timestamp );
-            end
         end
     end
 
@@ -875,12 +868,13 @@ function Vantage:SortEnemyPlayers( reposition )
         end
     end
 
-    if order_changed or reposition then
+    if reposition or order_changed then
         if InCombatLockdown() then
-            self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self );
+            self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self, reposition );
+        else
+            self.EnemyOrder = player_order;
+            self:ButtonPositioning();
         end
-        self.EnemyOrder = player_order;
-        self:ButtonPositioning();
     end
 end
 

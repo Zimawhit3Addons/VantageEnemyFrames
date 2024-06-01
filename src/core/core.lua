@@ -20,6 +20,7 @@ local BigDebuffs            = Ace3:GetAddon( "BigDebuffs", true )
 --                Lua
 -----------------------------------------
 local fmt       = string.format
+local select    = select
 local tinsert   = table.insert
 
 -----------------------------------------
@@ -303,11 +304,30 @@ Vantage.broadcast_checker = nil;
 ---
 --- @class VantageAura : AuraData
 --- @field priority number
+--- @field timestamp number
 ---
 
 ----------------------------------------
 --               Private
 ----------------------------------------
+
+---
+--- Checks the player for a same faction BG buff.
+---
+---@return boolean
+---
+local function HasSameFactionBuff()
+    for i = 1, 40 do
+        local name = UnitAura( "player", i, "HELPFUL" );
+        if not name then
+            break;
+        end
+        if name == "Alliance" or name == "Horde" then
+            return true;
+        end
+    end
+    return false;
+end
 
 ---
 ---
@@ -479,7 +499,7 @@ end
 --- @param timestamp number
 --- @return number
 ---
- function Vantage.ServerTimeToLocalTime( timestamp )
+function Vantage.ServerTimeToLocalTime( timestamp )
     Vantage:Debug( "[Vantage:ServerTimeToLocalTime] Server Time: " .. tostring( timestamp ) .. " | Local Time: " .. tostring( timestamp - ( GetServerTime() - GetTime() ) ) );
     return timestamp - ( GetServerTime() - GetTime() );
 end
@@ -533,12 +553,10 @@ function Vantage:UpdateBGFaction()
     local player_faction = UnitFactionGroup( "player" ) == "Horde" and 0 or 1;
 
     --
-    -- The same faction buff will always be at index 1. 
-    -- 
     -- If we're in a same faction BG, swap the faction.
     --
-    local faction_buff = UnitAura( "player", 1, "HELPFUL" );
-    if faction_buff and ( faction_buff == "Alliance" or faction_buff == "Horde" ) then
+    if HasSameFactionBuff() then
+        self:Debug( "[Vantage:UpdateBGFaction] Same faction BG detected." );
         self.PlayerInfo.faction = player_faction == 0 and 1 or 0;
     else
         self.PlayerInfo.faction = player_faction;
@@ -548,84 +566,91 @@ end
 ---
 --- Updates the `BattleGroundSize` based on the current BG map ID.
 ---
---- @param map_id number The current map ID.
+--- @param instance_id number The current instance ID.
+--- @param is_rated boolean
 --- @return boolean
 ---
-function Vantage:UpdateBGSize( map_id )
-
-    --
-    -- TODO: 
-    --  - RBG Map Ids
-    --  - Turn on rez timer for RBGs since rez times are normalized.
-    --
+function Vantage:UpdateBGSize( instance_id, is_rated )
 
     --
     -- Warsong Gulch
     -- 
-    if map_id == 1339 or map_id == 1460 then
+    if instance_id == 489 or instance_id == 2106 then
         self.BattleGroundSize           = 10;
-        self.BattleGroundStartMessage   = "Let the battle for Warsong Gulch begin!";
+        self.BattleGroundStartMessage   = "Let the battle begin!";
 
     --
     -- Eye of the Storm
     --
-    elseif map_id == 112 or map_id == 397 or map_id == 1956 then
-        self.BattleGroundSize = 15;
+    elseif instance_id == 566 then
+        self.BattleGroundSize           = 15;
+        self.BattleGroundStartMessage   = "The battle has begun!";
+
+    --
+    -- Eye of the Storm (Rated)
+    --
+    elseif instance_id == 968 then
+        self.BattleGroundSize           = 10;
+        self.BattleGroundStartMessage   = "The battle has begun!";
 
     --
     -- Arathi Basin
     --
-    elseif map_id == 93 or map_id == 844 or map_id == 1366 or map_id == 1461 then
-        self.BattleGroundSize = 15;
+    elseif instance_id == 529 or instance_id == 1681 or instance_id == 2107 then
+        if is_rated then    self.BattleGroundSize = 10;
+        else                self.BattleGroundSize = 15;
+        end
+        self.BattleGroundStartMessage = "The battle has begun!";
 
     --
     -- Alterac Valley
     --
-    elseif map_id == 91 or map_id == 1537 or map_id == 2162 or map_id == 1459 then
+    elseif instance_id == 30 then
         self.BattleGroundSize = 40;
 
     --
     -- Twin Peaks
     --
-    elseif map_id == 206 then
+    elseif instance_id == 726 then
         self.BattleGroundSize           = 10;
         self.BattleGroundStartMessage   = ""; -- TODO
 
     --
     -- Battle for Gilneas
     --
-    elseif map_id == 275 then
+    elseif instance_id == 761 then
         self.BattleGroundSize           = 10;
-        self.BattleGroundStartMessage   = "The battle for Gilneas has begun!";
+        self.BattleGroundStartMessage   = "The battle has begun!";
 
     --
     -- Strand of the Ancients
     --
-    elseif map_id == 128 then
+    elseif instance_id == 607 then
         self.BattleGroundSize = 15;
 
     --
     -- Isle of Conquest
     --
-    elseif map_id == 169 then
+    elseif instance_id == 628 then
         self.BattleGroundSize = 40;
 
     else
-        self:Notify( fmt( "Unknown map ID: %d - Please report this issue to https://www.github.com/zimawhit3/VantageEnemyFrames", map_id ) );
+        self:Notify( fmt( "Unknown instance ID: %d - Please report this issue to https://www.github.com/zimawhit3/VantageEnemyFrames", instance_id ) );
         return false;
     end
 
-    self:Debug( fmt( "[Vantage:UpdateBGSize] Map id: %d | BG Size: %d", map_id, self.BattleGroundSize ) );
     return true;
 end
 
 ---
---- Update the current BG's data depending on the map ID. Also, update
+--- Update the current BG's data depending on the instance ID. Also, update
 --- the player's faction inside the BG.
 ---
 function Vantage:UpdateMapID()
 
-    local map_id = GetBestMapForUnit( "player" );
+    local map_id        = GetBestMapForUnit( "player" );
+    local instance_id   = select( 8, GetInstanceInfo() );
+    local is_rated      = select( "#", GetBattlefieldScore( 0 ) ) == 16;
 
     --
     -- Check to make sure we recieved a real map ID.
@@ -633,15 +658,14 @@ function Vantage:UpdateMapID()
     -- If we did, update the map data. Otherwise, we start a timer
     -- that periodically checks in case the `map_id` was not ready.
     --
-    if map_id and map_id > 0 then
+    if map_id and map_id > 0 and instance_id and instance_id > 0 then
         self.BattleGroundBuffs      = Constants.BattleGroundBuffs[ map_id ];
         self.BattleGroundDebuffs    = Constants.BattleGroundDebuffs[ map_id ];
         self:UpdateBGFaction();
-        if self:UpdateBGSize( map_id ) then
+        if self:UpdateBGSize( instance_id, is_rated ) then
             self:StartBG();
         end
     else
         CTimerAfter( 1, DelayedUpdateMapId );
     end
 end
-

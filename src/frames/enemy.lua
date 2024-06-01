@@ -40,7 +40,7 @@ local UnitExists        = UnitExists
 local UnitChannelInfo   = UnitChannelInfo
 local UnitHealth        = UnitHealth
 local UnitHealthMax     = UnitHealthMax
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
+local UnitIsDead        = UnitIsDead
 
 -----------------------------------------
 --                Ace3
@@ -312,7 +312,10 @@ function EnemyFrame:Initialize( player_info )
     self:SetScript( 'OnDragStop', self.OnDragStop );
 
     self:ApplyButtonSettings();
-    self:Show();
+
+    if not self:IsShown() then
+        self:Show();
+    end
 end
 
 ---
@@ -376,7 +379,7 @@ end
 function EnemyFrame:SetBindings()
 
     if InCombatLockdown() then
-        return Vantage.QueueForUpdateAfterCombat( "SetBindings", self );
+        return Vantage.QueueForUpdateAfterCombat( "SetBindings", self, nil );
     end
 
     --
@@ -423,7 +426,7 @@ function EnemyFrame:SetBindings()
     end
     if needs_update then
         if InCombatLockdown() then
-            return Vantage.QueueForUpdateAfterCombat( "SetBindings", self );
+            return Vantage.QueueForUpdateAfterCombat( "SetBindings", self, nil );
         end
         for attribute, value in pairs( new_state ) do
             self:SetAttribute( attribute, value );
@@ -443,22 +446,15 @@ function EnemyFrame:Reset()
     self:SetClampedToScreen( false );
     self:SetScript( 'OnDragStart', nil );
     self:SetScript( 'OnDragStop', nil );
-    self.modules.buffs:Reset();
-    self.modules.castbar:Reset();
-    self.modules.class:Reset();
-    self.modules.combatindicator:Reset();
-    self.modules.debuffs:Reset();
-    self.modules.drtracker:Reset();
-    self.modules.healthbar:Reset();
-    self.modules.highestpriority:Reset();
-    self.modules.objective:Reset();
-    self.modules.racial:Reset();
-    self.modules.resource:UpdateMinMaxValues( 1 );
-    self.modules.targetcounter:Reset();
-    self.modules.targetindicator:Reset();
-    self.modules.trinket:Reset();
-    self.player_info.alive = true;
-    self.player_info.deaths = 0;
+
+    for _, frame in pairs( self.modules ) do
+        if frame.Reset then
+            frame:Reset();
+        end
+        frame.position_set = false;
+    end
+
+    self.player_info:Reset();
 end
 
 -----------------------------------------
@@ -601,10 +597,15 @@ function EnemyFrame:SetModulePositions()
         self:SetModulePosition( frame, true );
 
         if frame.enabled then
-            frame:Show();
+            if not frame:IsShown() then
+                frame:Show();
+            end
             frame:ApplyAllSettings();
+
         else
-            frame:Hide();
+            if frame:IsShown() then
+                frame:Hide();
+            end
             if frame.Reset then
                 frame:Reset();
             end
@@ -787,7 +788,7 @@ function EnemyFrame:BroadcastState( timestamp )
                 tinsert( buffs, highest );
             end
         end
-        ]]--
+        
         Vantage.Broadcast(
             Constants.MESSAGE_KINDS.MESSAGE_KIND_STATE,
             timestamp,
@@ -800,6 +801,7 @@ function EnemyFrame:BroadcastState( timestamp )
             --buffs,
             --debuffs
         );
+        ]]--
         self.last_broadcast = now;
     end
 end
@@ -844,6 +846,8 @@ function EnemyFrame:PlayerDetailsChanged()
     self.modules.name:PlayerDetailsChanged( self.player_info );
     self.modules.racial:PlayerDetailsChanged( self.player_info );
     self.modules.resource:PlayerDetailsChanged( self.player_info );
+
+    -- TODO: this should probably reset everything else
 end
 
 ---
@@ -865,6 +869,7 @@ function EnemyFrame:PlayerDied( deaths )
         self.modules.highestpriority:Reset();
         self.modules.objective:HideObjective();
         self.modules.resource:Reset();
+
     elseif deaths then
         --
         -- This player most likely was dead when we joined or reloaded so we had an incorrect number of 
@@ -929,7 +934,6 @@ function EnemyFrame:UpdateAll( temp_unit_id )
                 self.player_info.race = UnitRace( temp_unit_id );
                 self.modules.racial:PlayerDetailsChanged( self.player_info );
             end
-
         end
         self:RangeCheck( temp_unit_id );
         self.last_on_update = now;
@@ -979,28 +983,29 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
             local current_aura_priority = Vantage.GetSpellPriority( spellId ) or 0;
             if current_aura_priority >= priority then
 
-                local current_aura = buffs:FindChildFrameByAuraAttribute( "spellId", spellId );
+                local current_aura_frame = buffs:FindChildFrameByAuraAttribute( "spellId", spellId );
 
                 --
                 -- Update the existing aura frame with new duration
                 --
-                if current_aura then
-                    if current_aura.input.expirationTime ~= expirationTime then
-                        current_aura.cooldown:Clear();
-                        current_aura.cooldown:SetCooldown( expirationTime - duration, duration );
+                if current_aura_frame then
+                    current_aura_frame.input.timestamp = now;
+                    if current_aura_frame.input.expirationTime ~= expirationTime then
+                        current_aura_frame.cooldown:Clear();
+                        current_aura_frame.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 --
                 -- Check the highest_priority module, and update it if the expiration time differs
-                -- from the curreent.
+                -- from the current.
                 -- 
                 elseif highestpriority.enabled and highestpriority.displayed_aura and highestpriority.displayed_aura.spellId == spellId then
+                    highestpriority.displayed_aura.timestamp = now;
                     if highestpriority.displayed_aura.expirationTime ~= expirationTime then
                         highestpriority.cooldown:Clear();
                         highestpriority.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 else
-                    local new_aura =
-                    {
+                    local new_aura = {
                         applications    = count,
                         dispelName      = debuffType,
                         duration        = duration,
@@ -1010,12 +1015,18 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                         isStealable     = canStealOrPurge,
                         name            = name,
                         spellId         = spellId,
-                        priority        = current_aura_priority
+                        priority        = current_aura_priority,
+                        timestamp       = now
                     };
                     buffs:NewInput( new_aura );
                 end
             end
         end
+
+        --
+        -- Remove all stale auras that weren't included in this latest update
+        --
+        buffs:RemoveAuraInputsByTimestamp( self.last_aura_update );
     end
 
     if ( debuffs.enabled or highestpriority.enabled ) then
@@ -1036,22 +1047,23 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                 -- Update the existing aura frame with new duration
                 --
                 if current_aura then
+                    current_aura.input.timestamp = now;
                     if current_aura.input.expirationTime ~= expirationTime then
                         current_aura.cooldown:Clear();
                         current_aura.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 --
                 -- Check the highest_priority module, and update it if the expiration time differs
-                -- from the curreent.
+                -- from the current.
                 -- 
                 elseif highestpriority.enabled and highestpriority.displayed_aura and highestpriority.displayed_aura.spellId == spellId then
+                    highestpriority.displayed_aura.timestamp = now;
                     if highestpriority.displayed_aura.expirationTime ~= expirationTime then
                         highestpriority.cooldown:Clear();
                         highestpriority.cooldown:SetCooldown( expirationTime - duration, duration );
                     end
                 else
-                    local new_aura =
-                    {
+                    local new_aura = {
                         applications    = count,
                         auraInstanceID  = nil,
                         dispelName      = debuffType,
@@ -1062,16 +1074,22 @@ function EnemyFrame:UpdateAuras( temp_unit_id )
                         isStealable     = canStealOrPurge,
                         name            = name,
                         spellId         = spellId,
-                        priority        = current_aura_priority;
+                        priority        = current_aura_priority,
+                        timestamp       = now
                     };
                     debuffs:NewInput( new_aura );
                 end
             end
         end
+
+        --
+        -- Remove all stale auras that weren't included in this latest update
+        --
+        debuffs:RemoveAuraInputsByTimestamp( self.last_aura_update );
     end
 
     if highestpriority.enabled then
-        highestpriority:Update();
+        highestpriority:Update( now );
     end
 
     if buffs.enabled then
@@ -1158,6 +1176,7 @@ function EnemyFrame:SPELL_AURA_REMOVED( src_name, dest_name, spell_id, spell_nam
     self.modules.highestpriority:AuraRemoved( spell_id );
     self.modules.drtracker:AuraRemoved( spell_id );
 
+    --[[
     if not Vantage.TestingMode.active then
         Vantage.Broadcast(
             Constants.MESSAGE_KINDS.MESSAGE_KIND_AURA_REMOVED,
@@ -1167,7 +1186,7 @@ function EnemyFrame:SPELL_AURA_REMOVED( src_name, dest_name, spell_id, spell_nam
             container.is_harmful
         );
     end
-
+    ]]--
 end
 
 ---
@@ -1185,14 +1204,6 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
 
     if self.modules.racial:SPELL_CAST_SUCCESS( spell_id, time ) or
        self.modules.trinket:SPELL_CAST_SUCCESS( spell_id, time ) then
-        if not Vantage.TestingMode.active then
-            Vantage.Broadcast(
-                Constants.MESSAGE_KINDS.MESSAGE_KIND_COOLDOWN,
-                GetServerTime(),
-                self:Ambiguate(),
-                spell_id
-            );
-        end
         return;
     end
 
@@ -1234,7 +1245,7 @@ function EnemyFrame:SPELL_CAST_SUCCESS( src_name, dest_name, spell_id )
         if interrupt_duration and self.is_channeling then
             self.is_channeling = false;
             if self.modules.highestpriority.enabled then
-                self.modules.highestpriority:GotInterrupted( spell_id, interrupt_duration );
+                self.modules.highestpriority:UpdateActiveInterrupt( spell_id, interrupt_duration );
             end
         end
 
@@ -1251,7 +1262,7 @@ end
 function EnemyFrame:SPELL_INTERRUPT( src_name, dest_name, spell_id )
     local interrupt_duration = Constants.Interruptdurations[ spell_id ];
     if interrupt_duration then
-        self.modules.highestpriority:GotInterrupted( spell_id, interrupt_duration );
+        self.modules.highestpriority:UpdateActiveInterrupt( spell_id, interrupt_duration );
     end
 end
 
@@ -1262,13 +1273,18 @@ end
 ---
 function EnemyFrame:UNIT_HEALTH( unit_id )
 
-    if UnitIsDeadOrGhost( unit_id ) then
+    if UnitIsDead( unit_id ) then
         self:PlayerDied();
         return;
     end
 
     local health      = UnitHealth( unit_id );
     local max_health  = UnitHealthMax( unit_id );
+
+    if health == 0 then
+        self:PlayerDied();
+        return;
+    end
 
     self.modules.healthbar:UpdateHealth( unit_id, health, max_health );
 

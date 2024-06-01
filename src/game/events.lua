@@ -58,8 +58,9 @@ local MAX_RAID_MEMBERS = 40;
 
 ---
 --- @class PendingUpdate
---- @field event string
---- @field object table
+--- @field event    string
+--- @field object   table
+--- @field args     ...
 ---
 
 ----------------------------------------
@@ -116,7 +117,7 @@ local REZ_EVENTS =
 local function parseBattlefieldScore( index )
     local name, faction, race, classTag, specName, deaths, _;
     if HAS_SPECS then
-        name, _, _, deaths, _, faction, race, _, classTag, _, _, _, _, _, _, specName = GetBattlefieldScore( index );
+        name, _, _, deaths, _, faction, _, race, _, classTag, _, _, _, _, _, _, specName = GetBattlefieldScore( index );
     else
         name, _, _, deaths, _, faction, _, race, _, classTag = GetBattlefieldScore( index );
     end
@@ -165,15 +166,16 @@ end
 ---
 --- @param event    string
 --- @param object   table
+--- @param args     ...
 ---
-function Vantage.QueueForUpdateAfterCombat( event, object )
+function Vantage.QueueForUpdateAfterCombat( event, object, args )
     for i = 1, #PendingUpdates do
         local pending_update = PendingUpdates[ i ];
         if pending_update.object == object and pending_update.event == event then
             return;
         end
     end
-    tinsert( PendingUpdates, { event = event, object = object } );
+    tinsert( PendingUpdates, { event = event, object = object, args = args } );
 end
 
 ---
@@ -353,12 +355,13 @@ function Vantage:PLAYER_REGEN_ENABLED()
     -- Check if there are any outstanding updates that have been hold 
     -- back due to being in combat.
     --
-    local evnt, obj, update;
+    local args, evnt, obj, update;
     for i = 1, #PendingUpdates do
         update  = PendingUpdates[ i ];
         obj     = update.object;
         evnt    = update.event;
-        obj[ evnt ]( obj );
+        args    = update.args;
+        obj[ evnt ]( obj, args );
     end
     wipe( PendingUpdates );
 end
@@ -478,6 +481,15 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                     current_enemy:PlayerDied( score.deaths );
                 end
 
+                --
+                -- 
+                --
+                if not current_enemy:IsShown() and #self.EnemyOrder == 10 then
+                    if not InCombatLockdown() then
+                        current_enemy:Show();
+                    end
+                end
+
             else
                 --
                 -- If we were at the max players for the BG, find the player that left
@@ -487,8 +499,8 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                 if num_enemies == self.BattleGroundSize then
                     for i = 1, num_enemies do
                         if not bg_scores[ self.EnemyOrder[ i ] ] then
-                            self:Debug( fmt( "[Vantage:UPDATE_BATTLEFIELD_SCORE] New enemy player joined: %s | Updating: %s", name, self.EnemyOrder[ i ] ) );
                             self:UpdateEnemyFrame( score, name, i );
+                            new_players_added_or_removed = true;
                             break;
                         end
                     end
@@ -497,9 +509,8 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                 --
                 else
                     self:CreateEnemyFrame( score );
+                    new_players_added_or_removed = true;
                 end
-
-                new_players_added_or_removed = true;
             end
         end
     end
@@ -543,8 +554,12 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
     end
 
     if new_players_added_or_removed and #self.EnemyOrder > 2 then
-        self:SortEnemyPlayers( true );
-        self:UpdatePlayerCount();
+        if InCombatLockdown() then
+            self.QueueForUpdateAfterCombat( "UpdateEnemyPlayerCount", self, new_players_added_or_removed );
+        else
+            self:SortEnemyPlayers( true );
+            self:UpdatePlayerCount();
+        end
     end
 end
 

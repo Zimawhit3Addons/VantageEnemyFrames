@@ -188,7 +188,12 @@ end
 --- targeting the `EnemyFrame`.
 ---
 function TargetCounter:UpdateTargetIndicators()
-    if self.enabled and self.enemy then
-        self:SetText( tostring( #self.enemy.targeted_by ) );
+    if self.enabled and self.enemy and self.enemy.targeted_by then
+        local num_targs = #self.enemy.targeted_by;
+        if num_targs then
+            if self:GetFont() then
+                self:SetText( tostring( num_targs ) );
+            end
+        end
     end
 end

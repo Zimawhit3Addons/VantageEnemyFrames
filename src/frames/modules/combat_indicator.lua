@@ -231,10 +231,7 @@ end
 ---
 ---
 function CombatIndicator:Reset()
-    if self.combat:IsShown() then
-        self.in_combat = false;
-        self.combat:Hide();
-    end
+    self:Remove();
     self.cooldown:Clear();
 end
 
@@ -257,7 +254,9 @@ end
 ---
 function CombatIndicator:Remove()
     self.in_combat = false;
-    self.combat:Hide()
+    if self.combat:IsShown() then
+        self.combat:Hide();
+    end
 end
 
 ---
