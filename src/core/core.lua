@@ -577,21 +577,21 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
     -- 
     if instance_id == 489 or instance_id == 2106 then
         self.BattleGroundSize           = 10;
-        self.BattleGroundStartMessage   = "Let the battle for Warsong Gulch begin!";
+        self.BattleGroundStartMessage   = "Let the battle begin!";
 
     --
     -- Eye of the Storm
     --
     elseif instance_id == 566 then
         self.BattleGroundSize           = 15;
-        self.BattleGroundStartMessage   = "Let the battle begin!";
+        self.BattleGroundStartMessage   = "The battle has begun!";
 
     --
     -- Eye of the Storm (Rated)
     --
     elseif instance_id == 968 then
         self.BattleGroundSize           = 10;
-        self.BattleGroundStartMessage   = "Let the battle begin!";
+        self.BattleGroundStartMessage   = "The battle has begun!";
 
     --
     -- Arathi Basin
@@ -600,7 +600,7 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
         if is_rated then    self.BattleGroundSize = 10;
         else                self.BattleGroundSize = 15;
         end
-        self.BattleGroundStartMessage = "Let the battle begin!";
+        self.BattleGroundStartMessage = "The battle has begun!";
 
     --
     -- Alterac Valley
@@ -620,14 +620,13 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
     --
     elseif instance_id == 761 then
         self.BattleGroundSize           = 10;
-        self.BattleGroundStartMessage   = "The battle for Gilneas has begun!";
+        self.BattleGroundStartMessage   = "The battle has begun!";
 
     --
     -- Strand of the Ancients
     --
     elseif instance_id == 607 then
-        self.BattleGroundSize           = 15;
-        self.BattleGroundStartMessage   = "Let the battle begin!";
+        self.BattleGroundSize = 15;
 
     --
     -- Isle of Conquest
@@ -640,7 +639,6 @@ function Vantage:UpdateBGSize( instance_id, is_rated )
         return false;
     end
 
-    self:Debug( fmt( "[Vantage:UpdateBGSize] Instance id: %d | BG Size: %d", instance_id, self.BattleGroundSize ) );
     return true;
 end
 

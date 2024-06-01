@@ -840,7 +840,6 @@ end
 --- Update the `EnemyFrame` with the new player's information.
 ---
 function EnemyFrame:PlayerDetailsChanged()
-    Vantage:Debug( "[EnemyFrame:PlayerDetailsChanged] Player " .. self.player_info.name .. " info changed." );
     self:SetBindings();
     self.modules.class:PlayerDetailsChanged( self.player_info );
     self.modules.healthbar:PlayerDetailsChanged( self.player_info );

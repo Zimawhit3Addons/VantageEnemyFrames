@@ -391,7 +391,6 @@ end
 --- @param aura any
 ---
 function EnemyHighestPriority:PutBack( aura )
-    assert( aura ~= self.active_interrupt, "Active interrupt passed to EnemyHighestPriority:PutBack" );
     if aura.isHarmful then
         self.debuffs:NewInput( aura );
     else
@@ -459,17 +458,11 @@ function EnemyHighestPriority:SetInterruptAura( priority_aura )
     --
     if priority_aura then
 
-        assert( self.active_interrupt ~= priority_aura, "EnemyHighestPriority:SetInterruptAura - Passed in aura was an active_interrupt!" );
-
         if self.active_interrupt.priority < priority_aura.priority then
             return false;
         end
 
-        Vantage:Debug( string.format( "[EnemyHighestPriority:SetInterruptAura] *** Interrupt Priority(%s): %d | Priority Aura(%s): %d ***", self.active_interrupt.name, self.active_interrupt.priority, priority_aura.name, priority_aura.priority ) );
         self:PutBack( priority_aura );
-
-    else
-        Vantage:Debug( string.format( "[EnemyHighestPriority:SetInterruptAura] *** Interrupt Priority(%s): %d ***", self.active_interrupt.name, self.active_interrupt.priority ) );
     end
 
     self:SetDisplayedAura( self.active_interrupt );
@@ -531,7 +524,6 @@ function EnemyHighestPriority:Update( last_update )
     -- There's an aura taken from the buff/debuff heap to display.
     --
     if priority_aura then
-        assert( priority_aura ~= self.active_interrupt, "EnemyHighestPriority:GetCurrentHighestPriority returned an interrupt!" );
         if not self:SetInterruptAura( priority_aura ) then
             self:SetDisplayedAura( priority_aura );
         end
@@ -558,7 +550,6 @@ function EnemyHighestPriority:Update( last_update )
     -- aura.
     --
     if self.displayed_aura ~= self.active_interrupt and self:SetInterruptAura( self.displayed_aura ) then
-        assert( self.active_interrupt == self.displayed_aura, "Active interrupt should be equal to displayed aura!" );
         return;
     end
 

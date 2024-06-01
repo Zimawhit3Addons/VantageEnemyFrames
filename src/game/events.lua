@@ -485,7 +485,6 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                 -- 
                 --
                 if not current_enemy:IsShown() and #self.EnemyOrder == 10 then
-                    self:Debug( "[Vantage:UPDATE_BATTLEFIELD_SCORE] Enemy player " .. current_enemy.player_info.name  .. " frame is hidden?" );
                     if not InCombatLockdown() then
                         current_enemy:Show();
                     end
@@ -500,7 +499,6 @@ function Vantage:UPDATE_BATTLEFIELD_SCORE()
                 if num_enemies == self.BattleGroundSize then
                     for i = 1, num_enemies do
                         if not bg_scores[ self.EnemyOrder[ i ] ] then
-                            self:Debug( fmt( "[Vantage:UPDATE_BATTLEFIELD_SCORE] New enemy player joined: %s | Updating: %s", name, self.EnemyOrder[ i ] ) );
                             self:UpdateEnemyFrame( score, name, i );
                             new_players_added_or_removed = true;
                             break;
